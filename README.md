@@ -1,131 +1,118 @@
-# Grid-Based Farming Game
+# Grid-Based-Farming Game
 
-A small C++ farming game for desktop and browsers. This is Brandon Ho's rebuild
-of the [original university group project](https://github.com/BrandonHo419/GridFarmGame).
-See [CREDITS.md](CREDITS.md) for provenance and reuse restrictions.
+A small idle farming game in C++17 and raylib. Plant crops, hire workers, buy land
+and improve yields. The desktop version saves your farm and counts up to eight
+hours of offline production. The browser demo is playable inside the portfolio.
 
-## Current milestone
+Grid-Based-Farming Game is Brandon Ho's (me) rebuild of my University Group Project in OOP (Object-Oriented Programming)
+[GridFarmGame](https://github.com/BrandonHo419/GridFarmGame).
+See [CREDITS.md](CREDITS.md) for the original project and dependency notices.
 
-A 10-by-7 grid and a placeholder farmer controlled with WASD. Movement is
-bounded, diagonal movement is normalised, and simulation pauses when unfocused.
-The first tile is highlighted for the next milestone. Buying, crops and money
-are not implemented yet. There are no external game assets to locate or load.
+## Playing
 
-## Tools
+Start with $1000 and one free tile. Plots are permanent: harvesting restarts their
+cycle without another seed cost. A hired worker handles every plot of its crop.
+Buy new land beside an owned tile. Plant something before spending all your money
+on land; restart if you get stuck.
 
-- C++17 and CMake 3.25 or newer, using Ninja.
-- Windows native builds: MSYS2 UCRT64 GCC; do not mix MINGW64 libraries.
-- raylib 6.0, fetched automatically at a fixed commit by CMake.
-- Browser builds: Emscripten SDK **4.0.10**, pinned for this milestone.
-- Git and network access are needed for the initial dependency fetch.
-- Python 3 is used only to serve the browser demo locally.
+| Crop | First plot | Cycle | Yield | Worker |
+| --- | ---: | ---: | ---: | ---: |
+| Tomatoes | 25 | 10s | 60 | 250 |
+| Blueberries | 50 | 20s | 120 | 500 |
+| Carrots | 15 | 6s | 36 | 150 |
+| Beets | 35 | 14s | 84 | 350 |
+| Strawberries | 40 | 16s | 96 | 400 |
 
-The user's reported native tools are GCC 16.2.0, CMake 4.4.5 and Ninja 1.13.2.
-These are environment observations, not a claim that Windows was tested here.
+Extra plots cost `base * 1.15^existing plots`. Yield upgrades multiply income by
+1.25 and cost `base plot cost * 8 * 1.8^level`. Tending advances a crop by 10% of
+its cycle, with a shared five-second cooldown. Worker movement is cosmetic.
 
-## Windows desktop — MSYS2 UCRT64
+| Control | Action |
+| --- | --- |
+| WASD | Move the farmer |
+| Arrows / click | Select a tile |
+| 1-5 / crop buttons | Select a crop |
+| B / P / H | Buy land / plant / harvest |
+| M / U / T | Hire a worker / upgrade / tend |
+| Space | Pause or resume |
+| F1 / Help | Controls |
+| F2 / Settings | Sound and reduced motion |
+| R, then Y or N | Restart or cancel |
+| F5 / F9, then Y or N | Save / load on desktop |
 
-Extract this project into a new directory, separate from the original game.
-From the project root in **MSYS2 UCRT64**:
+Settings pause play while open. Q mutes, Left/Right adjusts music, Down/Up adjusts
+effects and V toggles reduced motion. The controls are clickable too. Settings
+last for the session. Sound starts after interaction and pauses when unfocused.
+The game runs without an audio device.
 
-```bash
-printf 'MSYSTEM=%s\n' "$MSYSTEM"
-command -v gcc g++ cmake ninja
+## Desktop saving
+
+Windows: `%LOCALAPPDATA%/Grid-Based-Farming-Game/idle.save`.
+Linux: `$XDG_DATA_HOME/Grid-Based-Farming-Game/idle.save`, falling back to
+`~/.local/share/Grid-Based-Farming-Game/idle.save`.
+
+The game loads automatically and starts paused. Autosave runs every 30 seconds,
+and normal close attempts a final save. A forced close can lose recent changes.
+Use one game instance per save slot. The old `farm.save` is never imported or replaced.
+
+Automated plots earn for up to eight hours away; manual crops only mature.
+Repeated loads don't repeat the same offline reward. Backward clock changes award
+nothing until the saved time is reached. Local clock or save editing is not prevented.
+An unreadable save disables autosave to protect the file. F5 explicitly replaces it.
+If a crash leaves an `idle.save.writing` folder, close all game instances before
+removing that staging folder. Keep `idle.save`.
+
+## Build on Windows
+
+Install MSYS2 UCRT64 GCC, CMake 3.25+ and Ninja. From PowerShell in this repository:
+
+```powershell
+$env:Path = "C:\msys64\ucrt64\bin;$env:Path"
 cmake -S . -B build/desktop -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
 cmake --build build/desktop
 ctest --test-dir build/desktop --output-on-failure
-./build/desktop/grid_farm.exe
+.\build\desktop\grid_farm.exe
 ```
 
-Expected: UCRT64; compilers, CMake and Ninja under `/ucrt64/bin`; tests pass;
-a window displays a grid and gold farmer. Run from this shell so the UCRT64
-runtime DLLs are available. Packaging a standalone executable is a later task.
-Escape closes the desktop application.
+Stop if a command fails. The first graphical build fetches the pinned raylib source.
 
-## Browser setup — PowerShell
-
-Use **PowerShell** for the Windows Emscripten SDK. It supplies its own compiler;
-never point the web build at GCC. The following example stores tools under
-`C:\dev` and assumes this project is at `C:\dev\Grid-Based-Farming-Game`.
-If you extracted elsewhere, change only the project `Set-Location` line.
-
-First check Python; install Python 3 before continuing if neither command works:
+For tests without graphics or a raylib download:
 
 ```powershell
-Get-Command py, python -ErrorAction SilentlyContinue
-py -3 --version
-```
-
-Install the pinned SDK in a new `C:\dev\emsdk` directory (do not clone over an
-existing SDK). Git is already available on your machine.
-
-```powershell
-New-Item -ItemType Directory -Force C:\dev | Out-Null
-Set-Location C:\dev
-git clone --branch 4.0.10 --depth 1 https://github.com/emscripten-core/emsdk.git
-Set-Location C:\dev\emsdk
-.\emsdk.bat install 4.0.10
-.\emsdk.bat activate 4.0.10
-. .\emsdk_env.ps1
-```
-
-For each new PowerShell session, load the SDK environment again and add your
-existing UCRT64 CMake and Ninja to the end of PATH. These are build tools; the
-Emscripten toolchain selects `emcc` and `em++` explicitly.
-
-```powershell
-. C:\dev\emsdk\emsdk_env.ps1
-$env:Path += ';C:\msys64\ucrt64\bin'
-Set-Location C:\dev\Grid-Based-Farming-Game
-emcc --version
-emcmake cmake -S . -B build/web -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-cmake --build build/web
-py -3 -m http.server 8000 --bind 127.0.0.1 --directory build/web
-```
-
-Open http://127.0.0.1:8000/grid_farm.html. If Python is available as `python`
-only, substitute `python` for `py -3`. Do not open the HTML using a `file://`
-URL. Keep `grid_farm.html`, `grid_farm.js` and `grid_farm.wasm` together.
-No SDK files or downloaded build dependencies should be committed.
-
-## Tests without graphics
-
-In **MSYS2 UCRT64**, from the project root:
-
-```bash
-cmake -S . -B build/core -G Ninja -DGRIDFARM_BUILD_APP=OFF -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B build/core -G Ninja -DGRIDFARM_BUILD_APP=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
 cmake --build build/core
 ctest --test-dir build/core --output-on-failure
 ```
 
-This mode does not fetch raylib. Tests check speed, diagonal movement, all four
-boundaries, idle input and invalid numeric input. Checks also run in Release.
+## Browser and portfolio
 
-## Manual verification
+See [docs/PORTFOLIO.md](docs/PORTFOLIO.md) for the Emscripten build and embedding steps.
+The browser version is a session-only demo: refreshing or closing it resets the
+farm. Desktop save/load and closed-tab earnings are not available in the browser.
+JavaScript and WebGL are required. Keyboard and mouse are recommended.
 
-1. Hold each WASD key: the farmer stops at every edge without leaving the grid.
-2. Hold W+D: diagonal movement should not be faster than straight movement.
-3. Resize the window or browser: the grid stays visible and centred.
-4. In the browser, click the canvas to focus it; tab out and release movement
-   keys, then return and click again. Movement should stop while unfocused,
-   with no large jump or stuck movement on return.
-5. Reload the browser page: the farmer starts on the highlighted tile.
+## Checks and screenshots
 
-Keyboard controls are the initial scope; touch controls are not implemented.
-The eventual portfolio can embed the static browser output in an iframe.
-Embedding and deployment have not been configured.
+The optional runtime checks need working graphics and audio:
 
-## Code layout
+```powershell
+cmake --build build/desktop --target desktop_checks
+Push-Location build/desktop
+.\desktop_checks.exe
+Pop-Location
+```
 
-- `src/core`: framework-independent state and fixed-step movement.
-- `src/app`: input, scheduling and rendering. Rendering does not update state.
-- `src/main.cpp`: window ownership and platform loop selection.
-- `tests`: standalone tests registered with CTest; no test framework dependency.
-- `web`: browser shell, canvas focus and loading status.
-- `assets`: asset reuse policy; currently no imported assets.
+They use an isolated save folder, simulate 600 seconds of play and run two real
+16-second music loops. Allow about 35 seconds. Screenshots and saves stay in the
+new `runtime-check-*` output folder.
 
-## Next milestone
+`grid_farm.exe --preview 1000 800` writes `farm-preview.png` in the working directory
+and exits without touching saves. Use `--preview 360 520` for the compact layout;
+append `settings` to show that panel.
 
-Implement a complete one-crop loop: adjacent land purchases, planting cost,
-growth, explicit harvesting and money. Test these rules independently of
-animation before adding more crops, saving or progression.
+For a manual check, plant and harvest, hire workers, upgrade, tend, resize the window,
+and try Help and Settings while running and paused. Confirm mute, both volume
+controls and reduced motion. Save, close and reopen to check offline progress.
+
+[VALIDATION.md](VALIDATION.md) records the tested behavior and remaining limits.
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) describes the code structure.

@@ -1,5 +1,6 @@
 # Assets
 
-Milestone 1 uses geometric placeholders and raylib's built-in font. No assets
-from the original university project are included. Before adding an asset,
-record its author, original URL, licence and required attribution in CREDITS.md.
+Artwork is drawn in `src/app/FarmArt.h`; audio is synthesized in
+`src/app/FarmAudio.h`. No separate image or sound files are needed. Text uses
+raylib's built-in font. Assets from the original university project are not included.
+External assets need an author, source URL, licence and attribution in `CREDITS.md`.
